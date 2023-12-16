@@ -16,7 +16,7 @@
   <v-container v-else>
     <v-col>
       <v-row justify="center">
-        <LineChart :chartData="tableData"/>
+        <LineChart :chartData="tableData" />
       </v-row>
       <v-row justify="center">
         <v-tabs
@@ -69,6 +69,45 @@
       </v-row>
     </v-col>
   </v-container>
+
+  <v-dialog
+      v-model="dialogModel"
+      width="auto"
+  >
+    <v-card>
+      <v-date-picker v-model="dateEntry"></v-date-picker>
+
+      <v-text-field
+          v-model="weightEntry"
+          type="number"
+          class="mb-2"
+          clearable
+          label="Weight (lbs)"
+      ></v-text-field>
+
+      <v-card-actions>
+        <v-btn color="error" @click="dialogModel = false">Close Dialog</v-btn>
+        <v-btn color="primary" @click="saveWeight" :disabled="weightEntry === null">Save</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-snackbar
+      v-model="snackbar"
+      :timeout=5000
+  >
+    {{ snackbarText }}
+
+    <template v-slot:actions>
+      <v-btn
+          color="red"
+          variant="text"
+          @click="snackbar = false"
+      >
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
 </template>
 
 
@@ -96,6 +135,14 @@ const lastWeight = ref(null);
 const stats = ref({});
 const tableData = ref({});
 
+const dialogModel = ref(false);
+const weightEntry = ref(null);
+const dateEntry = ref(new Date());
+
+const snackbar = ref(false);
+const snackbarText = ref("");
+
+
 onMounted(() => {
   determineIfUserIsLoggedIn();
   getWeightInfo();
@@ -111,6 +158,21 @@ const determineIfUserIsLoggedIn = () => {
 
 const convertKgsToLbs = (weight) => {
   return weight * 2.20462;
+}
+
+const convertLbsToKgs = (weight) => {
+  return weight / 2.20462;
+}
+
+const handleNetworkError = async (e, message) => {
+  console.log(e.message);
+  if(e?.response?.status === 403 || e?.response?.status === 401){
+    await router.push("/login");
+    return;
+  }
+
+  snackbarText.value = message;
+  snackbar.value = true;
 }
 
 const getWeightInfo = async () => {
@@ -143,8 +205,7 @@ const getWeightInfo = async () => {
 
     loading.value = false;
   } catch (e) {
-    console.log(e.message);
-    // TODO error handle
+    await handleNetworkError(e, "Unable to get weight info!");
   }
 
 }
@@ -156,10 +217,15 @@ const updateChart = async () => {
   const TABLE_DATA_ROUTE = `${URL}/entry/username/${userStore.user}?time=${timeRange.value}`;
 
   // Table Data
-  const tableDataResponse = await axios({
-    url: TABLE_DATA_ROUTE,
-    headers: {'x-auth-token': userStore.getToken}
-  });
+  let tableDataResponse;
+  try {
+    tableDataResponse = await axios({
+      url: TABLE_DATA_ROUTE,
+      headers: {'x-auth-token': userStore.getToken}
+    });
+  } catch (e) {
+    await handleNetworkError(e, "Unable to update chart data!");
+  }
 
   const userTableData = {
     labels: [],
@@ -183,7 +249,31 @@ const updateChart = async () => {
 }
 
 const handleAddWeight = () => {
-  console.log("add weight...")
+  dialogModel.value = true;
+}
+
+const saveWeight = async () => {
+  const axiosSubmitConfig = {
+    method: "POST",
+    url: `${URL}/entry`,
+    headers: {
+      'x-auth-token': userStore.getToken
+    },
+    data: {
+      username: userStore.getUser,
+      weight: convertLbsToKgs(weightEntry.value),
+      entryDate: dateEntry.value
+    }
+  }
+
+  try {
+    const response = await axios(axiosSubmitConfig);
+  } catch (e) {
+    await handleNetworkError(e, "Unable to upload weight!");
+  }
+
+  await getWeightInfo();
+  dialogModel.value = false;
 }
 
 </script>
