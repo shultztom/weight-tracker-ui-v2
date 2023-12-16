@@ -16,7 +16,7 @@
   <v-container v-else>
     <v-col>
       <v-row justify="center">
-        <LineChart :chartData="tableData" />
+        <LineChart :chartData="tableData"/>
       </v-row>
       <v-row justify="center">
         <v-tabs
@@ -33,6 +33,12 @@
 
       <v-row justify="center" class="pt-2">
         <p class="text-h3">{{ lastWeight }} lbs</p>
+      </v-row>
+
+      <v-row justify="center" class="pt-1">
+        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'down'">↓ {{ weightDiffForTimePeriod }} lbs</p>
+        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'flat'">{{ weightDiffForTimePeriod }} lbs</p>
+        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'up'">↑ {{ weightDiffForTimePeriod }} lbs</p>
       </v-row>
 
 
@@ -142,6 +148,8 @@ const dateEntry = ref(new Date());
 const snackbar = ref(false);
 const snackbarText = ref("");
 
+const weightDiffForTimePeriod = ref(null);
+const weightDiffForTimePeriodUpDownOrFlat = ref("");
 
 onMounted(() => {
   determineIfUserIsLoggedIn();
@@ -166,7 +174,7 @@ const convertLbsToKgs = (weight) => {
 
 const handleNetworkError = async (e, message) => {
   console.log(e.message);
-  if(e?.response?.status === 403 || e?.response?.status === 401){
+  if (e?.response?.status === 403 || e?.response?.status === 401) {
     await router.push("/login");
     return;
   }
@@ -239,9 +247,30 @@ const updateChart = async () => {
   }
 
   for (const data of tableDataResponse.data) {
+    // Format for Chart.js
     userTableData.labels.push(data.entryDate);
     userTableData.datasets[0].data.push(convertKgsToLbs(data.weight));
   }
+
+  // Get first and last for diff
+  const weightArray = tableDataResponse.data.map(x => x.weight);
+
+  const max = weightArray[0];
+  const min = weightArray[weightArray.length - 1];
+
+  let diff = max - min;
+
+  if (diff > 0) {
+    weightDiffForTimePeriodUpDownOrFlat.value = 'down';
+  } else if (diff < 0) {
+    weightDiffForTimePeriodUpDownOrFlat.value = 'up';
+  } else {
+    weightDiffForTimePeriodUpDownOrFlat.value = 'flat';
+  }
+
+  diff = Math.abs(diff);
+
+  weightDiffForTimePeriod.value = convertKgsToLbs(diff).toFixed(1);
 
   tableData.value = userTableData;
 
