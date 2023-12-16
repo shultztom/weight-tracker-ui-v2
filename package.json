@@ -1,0 +1,27 @@
+{
+  "name": "weight-tracker-ui-v2",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mdi/font": "^7.3.67",
+    "@vueuse/core": "^10.7.0",
+    "axios": "^1.6.2",
+    "chart.js": "^4.4.1",
+    "pinia": "^2.1.7",
+    "vue": "^3.3.11",
+    "vue-chart-3": "^3.1.8",
+    "vue-router": "^4.2.5"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.2",
+    "vite": "^5.0.8",
+    "vite-plugin-vuetify": "^2.0.1",
+    "vuetify": "^3.4.7"
+  }
+}
