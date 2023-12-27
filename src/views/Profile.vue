@@ -194,7 +194,7 @@ const getWeightInfo = async () => {
       headers: {'x-auth-token': userStore.getToken}
     });
 
-    lastWeight.value = convertKgsToLbs(lastWeightResponse.data?.weight);
+    lastWeight.value = convertKgsToLbs(lastWeightResponse.data?.weight).toFixed(1);
 
     // Stats
     const statsResponse = await axios({
