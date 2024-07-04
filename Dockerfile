@@ -1,16 +1,16 @@
 # Get node to build
-FROM node:18-alpine as builder
+FROM node:lts-alpine as builder
 
 # Create app directory
 WORKDIR /app
 
 # Install app dependencies
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
 
 # Build vue
-RUN [ "yarn", "build" ]
+RUN [ "npm", "run", "build" ]
 
 # Get nginx to serve
 FROM nginxinc/nginx-unprivileged:stable

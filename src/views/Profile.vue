@@ -240,6 +240,7 @@ const updateChart = async () => {
     datasets: [
       {
         label: 'Weight',
+        backgroundColor: '#ADD8E6',
         data: [],
         fill: true,
       },
