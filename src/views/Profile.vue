@@ -56,7 +56,7 @@
             <p class="text-h6">TDEE</p>
           </v-row>
           <v-row justify="center">
-            {{ stats?.TDEE }}
+            {{ stats?.TDEE }} <span @click="handleTdeeOptionsDialogModel"> ⓘ</span>
           </v-row>
         </v-col>
         <v-col xs="4">
@@ -77,7 +77,7 @@
   </v-container>
 
   <v-dialog
-      v-model="dialogModel"
+      v-model="weightEnterDialogModel"
       width="auto"
   >
     <v-card>
@@ -92,10 +92,24 @@
       ></v-text-field>
 
       <v-card-actions>
-        <v-btn color="error" @click="dialogModel = false">Close Dialog</v-btn>
+        <v-btn color="error" @click="weightEnterDialogModel = false">Close Dialog</v-btn>
         <v-btn color="primary" @click="saveWeight" :disabled="weightEntry === null">Save</v-btn>
       </v-card-actions>
     </v-card>
+  </v-dialog>
+
+  <v-dialog
+    v-model="tdeeOptionsDialogModel"
+    width="auto">
+      <v-card
+          class="mx-auto"
+          max-width="300"
+      >
+        <v-list :items="tdeeOptions"></v-list>
+        <v-card-actions>
+          <v-btn color="error" @click="tdeeOptionsDialogModel = false">Close Dialog</v-btn>
+        </v-card-actions>
+      </v-card>
   </v-dialog>
 
   <v-snackbar
@@ -130,6 +144,7 @@ import router from "../router.js";
 import axios from "axios";
 
 const URL = 'https://weight-tracker-api.shultzlab.com';
+// const URL = 'http://localhost:8080';
 
 const userStore = useUserStore();
 
@@ -141,7 +156,7 @@ const lastWeight = ref(null);
 const stats = ref({});
 const tableData = ref({});
 
-const dialogModel = ref(false);
+const weightEnterDialogModel = ref(false);
 const weightEntry = ref(null);
 const dateEntry = ref(new Date());
 
@@ -151,9 +166,13 @@ const snackbarText = ref("");
 const weightDiffForTimePeriod = ref(null);
 const weightDiffForTimePeriodUpDownOrFlat = ref("");
 
+const tdeeOptionsDialogModel = ref(false);
+const tdeeOptions = ref([]);
+
 onMounted(() => {
   determineIfUserIsLoggedIn();
   getWeightInfo();
+  getTdeeOptions();
 })
 
 const determineIfUserIsLoggedIn = () => {
@@ -221,7 +240,6 @@ const getWeightInfo = async () => {
 const updateChart = async () => {
   loadingChart.value = true;
 
-  console.log('Getting chart data');
   const TABLE_DATA_ROUTE = `${URL}/entry/username/${userStore.user}?time=${timeRange.value}`;
 
   // Table Data
@@ -279,7 +297,7 @@ const updateChart = async () => {
 }
 
 const handleAddWeight = () => {
-  dialogModel.value = true;
+  weightEnterDialogModel.value = true;
 }
 
 const saveWeight = async () => {
@@ -303,7 +321,28 @@ const saveWeight = async () => {
   }
 
   await getWeightInfo();
-  dialogModel.value = false;
+  weightEnterDialogModel.value = false;
+}
+
+const getTdeeOptions = async () => {
+  const STATS_TDEE_OPTIONS_ROUTE = `${URL}/stats/tdeeOptions/${userStore.user}`;
+  const statsResponse = await axios({
+    url: STATS_TDEE_OPTIONS_ROUTE,
+    headers: {'x-auth-token': userStore.getToken}
+  });
+
+  tdeeOptions.value = [
+    `Sedentary:         ${statsResponse.data?.sedentary}`,
+    `Lightly Active:    ${statsResponse.data?.lightlyActive}`,
+    `Moderately Active: ${statsResponse.data?.moderatelyActive}`,
+    `Very Active:       ${statsResponse.data?.veryActive}`,
+    `Extra Active:      ${statsResponse.data?.extraActive}`
+  ]
+}
+
+const handleTdeeOptionsDialogModel = () => {
+  console.log('handleTdeeOptionsDialogModel');
+  tdeeOptionsDialogModel.value = true;
 }
 
 </script>
