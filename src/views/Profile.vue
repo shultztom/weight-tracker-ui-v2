@@ -69,6 +69,25 @@
         </v-col>
       </v-row>
 
+      <v-row justify="center" align="center" class="pt-2">
+        <v-col xs="6">
+          <v-row justify="center">
+            <p class="text-p">Days Until Goal</p>
+          </v-row>
+          <v-row justify="center">
+            {{ goalInfo?.daysUntilGoal }}
+          </v-row>
+        </v-col>
+        <v-col xs="6">
+          <v-row justify="center">
+            <p class="text-p">Eat this much</p>
+          </v-row>
+          <v-row justify="center">
+            {{ goalInfo?.todayCalorieGoal?.toFixed(0) }} cals
+          </v-row>
+        </v-col>
+      </v-row>
+
 
       <v-row justify="center" class="pt-2">
         <v-btn @click="handleAddWeight">Add Weight</v-btn>
@@ -169,6 +188,8 @@ const weightDiffForTimePeriodUpDownOrFlat = ref("");
 const tdeeOptionsDialogModel = ref(false);
 const tdeeOptions = ref([]);
 
+const goalInfo = ref(null)
+
 onMounted(() => {
   determineIfUserIsLoggedIn();
   getWeightInfo();
@@ -205,6 +226,7 @@ const handleNetworkError = async (e, message) => {
 const getWeightInfo = async () => {
   const LAST_WEIGHT_INFO_ROUTE = `${URL}/entry/username/${userStore.user}/last`;
   const STATS_ROUTE = `${URL}/stats/all/${userStore.user}`;
+  const GOAL_ROUTE = `${URL}/goals/${userStore.user}/goal/calorieBreakdown`;
 
   try {
     // Last Weight
@@ -226,6 +248,15 @@ const getWeightInfo = async () => {
       TDEE: statsResponse.data?.TDEE.toFixed(0),
       BMI: statsResponse.data?.BMI.toFixed(1),
     }
+
+    // Goals
+    const goalResponse = await axios({
+      url: GOAL_ROUTE,
+      headers: {'x-auth-token': userStore.getToken}
+    });
+
+    goalInfo.value = goalResponse.data;
+    console.log(goalResponse.data);
 
     // Chart Data
     await updateChart();
