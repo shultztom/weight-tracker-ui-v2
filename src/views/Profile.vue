@@ -256,8 +256,6 @@ const getWeightInfo = async () => {
     });
 
     goalInfo.value = goalResponse.data;
-    console.log(goalResponse.data);
-
     // Chart Data
     await updateChart();
 
