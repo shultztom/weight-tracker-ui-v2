@@ -69,7 +69,7 @@
         </v-col>
       </v-row>
 
-      <v-row justify="center" align="center" class="pt-2">
+      <v-row v-if="hasGoal" justify="center" align="center" class="pt-2">
         <v-col xs="6">
           <v-row justify="center">
             <p class="text-p">Days Until Goal</p>
@@ -163,7 +163,7 @@ import router from "../router.js";
 import axios from "axios";
 
 const URL = 'https://weight-tracker-api.shultzlab.com';
-// const URL = 'http://localhost:8080';
+//const URL = 'http://localhost:8080';
 
 const userStore = useUserStore();
 
@@ -189,6 +189,7 @@ const tdeeOptionsDialogModel = ref(false);
 const tdeeOptions = ref([]);
 
 const goalInfo = ref(null)
+const hasGoal = ref(false)
 
 onMounted(() => {
   determineIfUserIsLoggedIn();
@@ -256,6 +257,10 @@ const getWeightInfo = async () => {
     });
 
     goalInfo.value = goalResponse.data;
+    if(goalResponse.data?.todayCalorieGoal !== 0){
+      hasGoal.value = true;
+    }
+
     // Chart Data
     await updateChart();
 
