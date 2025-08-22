@@ -19,19 +19,19 @@
         <LineChart :chartData="tableData"/>
       </v-row>
       <v-row justify="center">
-        <v-tabs
-            v-model="timeRange"
-            @update:model-value="updateChart"
-        >
-          <v-tab value="7">Week</v-tab>
-          <v-tab value="30">Month</v-tab>
-          <v-tab value="365">Year</v-tab>
-          <v-tab value="-1">All</v-tab>
-        </v-tabs>
+        <div style="width: 50%;">
+        <v-select
+              v-model="timeRange"
+              :items="timeRangeItems"
+              item-title="title"
+              item-value="value"
+              @update:model-value="updateChart"
+              variant="solo-filled">
+        </v-select>
+        </div>
       </v-row>
 
-
-      <v-row justify="center" class="pt-2">
+      <v-row justify="center">
         <p class="text-h3">{{ lastWeight }} lbs</p>
       </v-row>
 
@@ -42,7 +42,7 @@
       </v-row>
 
 
-      <v-row justify="center" class="pt-2">
+      <v-row justify="center" class="pt-1">
         <v-col xs="4">
           <v-row justify="center">
             <p class="text-h6">BMR</p>
@@ -69,7 +69,7 @@
         </v-col>
       </v-row>
 
-      <v-row v-if="hasGoal" justify="center" align="center" class="pt-2">
+      <v-row v-if="hasGoal" justify="center" align="center" class="pt-1">
         <v-col xs="6">
           <v-row justify="center">
             <p class="text-p">Days Until Goal</p>
@@ -89,7 +89,7 @@
       </v-row>
 
 
-      <v-row justify="center" class="pt-2">
+      <v-row justify="center" class="pt-1">
         <v-btn @click="handleAddWeight">Add Weight</v-btn>
       </v-row>
     </v-col>
@@ -169,7 +169,14 @@ const userStore = useUserStore();
 
 const loading = ref(true);
 const loadingChart = ref(true);
-const timeRange = ref("7");
+const timeRange = ref(7);
+const timeRangeItems = [
+  {title: 'Week', value: 7},
+  {title: 'Month', value: 30},
+  {title: '3 Month', value: 90},
+  {title: 'Year', value: 365},
+  {title: 'All', value: -1},
+];
 
 const lastWeight = ref(null);
 const stats = ref({});
