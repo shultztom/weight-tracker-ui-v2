@@ -19,19 +19,24 @@
         <LineChart :chartData="tableData"/>
       </v-row>
       <v-row justify="center">
-        <div style="width: 50%;">
+        <div style="width: 33%;">
         <v-select
               v-model="timeRange"
               :items="timeRangeItems"
               item-title="title"
               item-value="value"
               @update:model-value="updateChart"
-              variant="solo-filled">
+              variant="solo-filled"
+              class="center-selection"
+              item-props
+              :menu-props="{ contentClass: 'centered-menu-items' }"
+              hide-details
+              :style="{ 'text-align': 'center' }">
         </v-select>
         </div>
       </v-row>
 
-      <v-row justify="center">
+      <v-row justify="center pt-1">
         <p class="text-h3">{{ lastWeight }} lbs</p>
       </v-row>
 
@@ -149,6 +154,20 @@
   </v-snackbar>
 </template>
 
+<style>
+.centered-menu-items .v-list-item-title {
+  text-align: center;
+  width: 100%;
+}
+
+.center-selection .v-field__input {
+  text-align: center !important;
+}
+
+.center-selection .v-select__selection {
+  margin: auto !important;
+}
+</style>
 
 <script setup>
 import {onMounted, ref} from "vue";
@@ -174,6 +193,7 @@ const timeRangeItems = [
   {title: 'Week', value: 7},
   {title: 'Month', value: 30},
   {title: '3 Month', value: 90},
+  {title: '6 Month', value: 180},
   {title: 'Year', value: 365},
   {title: 'All', value: -1},
 ];
