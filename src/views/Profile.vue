@@ -75,7 +75,7 @@
       </v-row>
 
       <v-row v-if="hasGoal" justify="center" align="center" class="pt-1">
-        <v-col xs="6">
+        <v-col xs="4">
           <v-row justify="center">
             <p class="text-p">Days Until Goal</p>
           </v-row>
@@ -83,7 +83,15 @@
             {{ goalInfo?.daysUntilGoal }}
           </v-row>
         </v-col>
-        <v-col xs="6">
+        <v-col xs="4">
+          <v-row justify="center">
+            <p class="text-p">Weight Left</p>
+          </v-row>
+          <v-row justify="center">
+            {{ convertKgsToLbs(goalInfo?.weightDiff).toFixed(1) }} lbs
+          </v-row>
+        </v-col>
+        <v-col xs="4">
           <v-row justify="center">
             <p class="text-p">Eat this much</p>
           </v-row>
