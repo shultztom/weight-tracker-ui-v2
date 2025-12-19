@@ -13,7 +13,7 @@ COPY . .
 RUN [ "npm", "run", "build" ]
 
 # Get nginx to serve
-FROM nginxinc/nginx-unprivileged:bookworm-perl
+FROM nginxinc/nginx-unprivileged:1.29-alpine-slim
 
 # Set up nginx conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
