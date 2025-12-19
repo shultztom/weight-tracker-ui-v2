@@ -13,133 +13,147 @@
   </v-container>
 
 
-  <v-container v-else>
-    <v-col>
-      <v-row justify="center">
-        <LineChart :chartData="tableData"/>
+  <v-container v-else class="pb-8">
+    <v-col class="pa-0">
+      <v-row justify="center" no-gutters>
+        <v-col cols="12" md="10" lg="8">
+          <LineChart :chartData="tableData" :options="chartOptions" :height="300"/>
+        </v-col>
       </v-row>
-      <v-row justify="center">
-        <div style="width: 33%;">
-        <v-select
-              v-model="timeRange"
-              :items="timeRangeItems"
-              item-title="title"
-              item-value="value"
-              @update:model-value="updateChart"
-              variant="solo-filled"
-              class="center-selection"
-              item-props
-              :menu-props="{ contentClass: 'centered-menu-items' }"
-              hide-details
-              :style="{ 'text-align': 'center' }">
-        </v-select>
+      <v-row justify="center" class="mt-2">
+        <v-col cols="12" sm="8" md="6" lg="4">
+          <v-select
+                v-model="timeRange"
+                :items="timeRangeItems"
+                item-title="title"
+                item-value="value"
+                @update:model-value="updateChart"
+                variant="solo-filled"
+                class="center-selection"
+                item-props
+                :menu-props="{ contentClass: 'centered-menu-items' }"
+                hide-details
+                density="compact">
+          </v-select>
+        </v-col>
+      </v-row>
+
+      <v-row justify="center" class="mt-4">
+        <div class="text-center">
+          <div class="text-h3 font-weight-bold">{{ lastWeight }} lbs</div>
+          <div class="text-h5 mt-1" :class="weightDiffColor">
+            <template v-if="weightDiffForTimePeriodUpDownOrFlat === 'down'">↓</template>
+            <template v-else-if="weightDiffForTimePeriodUpDownOrFlat === 'up'">↑</template>
+            {{ weightDiffForTimePeriod }} lbs
+          </div>
         </div>
       </v-row>
 
-      <v-row justify="center pt-1">
-        <p class="text-h3">{{ lastWeight }} lbs</p>
-      </v-row>
-
-      <v-row justify="center" class="pt-1">
-        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'down'">↓ {{ weightDiffForTimePeriod }} lbs</p>
-        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'flat'">{{ weightDiffForTimePeriod }} lbs</p>
-        <p class="text-h5" v-if="weightDiffForTimePeriodUpDownOrFlat === 'up'">↑ {{ weightDiffForTimePeriod }} lbs</p>
-      </v-row>
-
-
-      <v-row justify="center" class="pt-1">
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-h6">BMR</p>
-          </v-row>
-          <v-row justify="center">
-            {{ stats?.BMR }}
-          </v-row>
-        </v-col>
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-h6">TDEE</p>
-          </v-row>
-          <v-row justify="center">
-            {{ stats?.TDEE }} <span @click="handleTdeeOptionsDialogModel"> ⓘ</span>
-          </v-row>
-        </v-col>
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-h6">BMI</p>
-          </v-row>
-          <v-row justify="center">
-            {{ stats?.BMI }}
-          </v-row>
+      <v-row justify="center" class="mt-6">
+        <v-col cols="12" sm="10" md="8">
+          <v-card variant="outlined" class="rounded-lg">
+            <v-row no-gutters class="text-center py-2">
+              <v-col cols="4">
+                <div class="text-caption text-uppercase font-weight-bold">BMR</div>
+                <div class="text-h6">{{ stats?.BMR }}</div>
+              </v-col>
+              <v-col cols="4" class="border-s border-e">
+                <div class="text-caption text-uppercase font-weight-bold">
+                  TDEE
+                  <v-icon
+                    icon="mdi-information-outline"
+                    size="x-small"
+                    class="cursor-pointer"
+                    @click="handleTdeeOptionsDialogModel"
+                  ></v-icon>
+                </div>
+                <div class="text-h6">{{ stats?.TDEE }}</div>
+              </v-col>
+              <v-col cols="4">
+                <div class="text-caption text-uppercase font-weight-bold">BMI</div>
+                <div class="text-h6">{{ stats?.BMI }}</div>
+              </v-col>
+            </v-row>
+          </v-card>
         </v-col>
       </v-row>
 
-      <v-row v-if="hasGoal" justify="center" align="center" class="pt-1">
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-p">Days Until Goal</p>
-          </v-row>
-          <v-row justify="center">
-            {{ goalInfo?.daysUntilGoal }}
-          </v-row>
-        </v-col>
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-p">Weight Left</p>
-          </v-row>
-          <v-row justify="center">
-            {{ convertKgsToLbs(goalInfo?.weightDiff).toFixed(1) }} lbs
-          </v-row>
-        </v-col>
-        <v-col xs="4">
-          <v-row justify="center">
-            <p class="text-p">Eat this much</p>
-          </v-row>
-          <v-row justify="center">
-            {{ goalInfo?.todayCalorieGoal?.toFixed(0) }} cals
-          </v-row>
+      <v-row v-if="hasGoal" justify="center" class="mt-4">
+        <v-col cols="12" sm="10" md="8">
+          <v-card variant="outlined" class="rounded-lg">
+            <v-row no-gutters class="text-center py-2">
+              <v-col cols="4">
+                <div class="text-caption text-uppercase font-weight-bold">Days Left</div>
+                <div class="text-h6">{{ goalInfo?.daysUntilGoal }}</div>
+              </v-col>
+              <v-col cols="4" class="border-s border-e">
+                <div class="text-caption text-uppercase font-weight-bold">Weight Left</div>
+                <div class="text-h6">{{ convertKgsToLbs(goalInfo?.weightDiff).toFixed(1) }}</div>
+              </v-col>
+              <v-col cols="4">
+                <div class="text-caption text-uppercase font-weight-bold">Calorie Goal</div>
+                <div class="text-h6">{{ goalInfo?.todayCalorieGoal?.toFixed(0) }}</div>
+              </v-col>
+            </v-row>
+          </v-card>
         </v-col>
       </v-row>
 
-
-      <v-row justify="center" class="pt-1">
-        <v-btn @click="handleAddWeight">Add Weight</v-btn>
+      <v-row justify="center" class="mt-6">
+        <v-btn
+          color="primary"
+          size="large"
+          prepend-icon="mdi-plus"
+          rounded="pill"
+          @click="handleAddWeight"
+        >
+          Add Weight
+        </v-btn>
       </v-row>
     </v-col>
   </v-container>
 
   <v-dialog
       v-model="weightEnterDialogModel"
-      width="auto"
+      max-width="400"
   >
-    <v-card>
-      <v-date-picker v-model="dateEntry"></v-date-picker>
+    <v-card class="rounded-lg">
+      <v-card-title class="text-center pt-4">Add Weight Entry</v-card-title>
+      <v-card-text>
+        <v-date-picker v-model="dateEntry" color="primary" width="100%" hide-header></v-date-picker>
 
-      <v-text-field
-          v-model="weightEntry"
-          type="number"
-          class="mb-2"
-          clearable
-          label="Weight (lbs)"
-      ></v-text-field>
+        <v-text-field
+            v-model="weightEntry"
+            type="number"
+            class="mt-4"
+            variant="outlined"
+            clearable
+            label="Weight (lbs)"
+            prepend-inner-icon="mdi-weight-pound"
+        ></v-text-field>
+      </v-card-text>
 
-      <v-card-actions>
-        <v-btn color="error" @click="weightEnterDialogModel = false">Close Dialog</v-btn>
-        <v-btn color="primary" @click="saveWeight" :disabled="weightEntry === null">Save</v-btn>
+      <v-card-actions class="pb-4 px-6">
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="weightEnterDialogModel = false">Cancel</v-btn>
+        <v-btn color="primary" variant="elevated" @click="saveWeight" :disabled="!weightEntry">Save</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
 
   <v-dialog
     v-model="tdeeOptionsDialogModel"
-    width="auto">
-      <v-card
-          class="mx-auto"
-          max-width="300"
-      >
-        <v-list :items="tdeeOptions"></v-list>
-        <v-card-actions>
-          <v-btn color="error" @click="tdeeOptionsDialogModel = false">Close Dialog</v-btn>
+    max-width="350">
+      <v-card class="rounded-lg">
+        <v-card-title class="text-center pt-4">TDEE Options</v-card-title>
+        <v-list>
+          <v-list-item v-for="(option, index) in tdeeOptions" :key="index">
+            <v-list-item-title class="text-body-2">{{ option }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+        <v-card-actions class="pb-4 px-6">
+          <v-spacer></v-spacer>
+          <v-btn color="primary" variant="text" @click="tdeeOptionsDialogModel = false">Close</v-btn>
         </v-card-actions>
       </v-card>
   </v-dialog>
@@ -178,7 +192,7 @@
 </style>
 
 <script setup>
-import {onMounted, ref} from "vue";
+import {computed, onMounted, ref} from "vue";
 
 import {LineChart} from 'vue-chart-3';
 import {Chart, registerables} from "chart.js";
@@ -209,6 +223,15 @@ const timeRangeItems = [
 const lastWeight = ref(null);
 const stats = ref({});
 const tableData = ref({});
+const chartOptions = {
+  plugins: {
+    legend: {
+      display: false,
+    },
+  },
+  responsive: true,
+  maintainAspectRatio: false,
+};
 
 const weightEnterDialogModel = ref(false);
 const weightEntry = ref(null);
@@ -225,6 +248,12 @@ const tdeeOptions = ref([]);
 
 const goalInfo = ref(null)
 const hasGoal = ref(false)
+
+const weightDiffColor = computed(() => {
+  if (weightDiffForTimePeriodUpDownOrFlat.value === 'down') return 'text-success';
+  if (weightDiffForTimePeriodUpDownOrFlat.value === 'up') return 'text-error';
+  return 'text-medium-emphasis';
+})
 
 onMounted(() => {
   determineIfUserIsLoggedIn();
@@ -410,7 +439,6 @@ const getTdeeOptions = async () => {
 }
 
 const handleTdeeOptionsDialogModel = () => {
-  console.log('handleTdeeOptionsDialogModel');
   tdeeOptionsDialogModel.value = true;
 }
 
