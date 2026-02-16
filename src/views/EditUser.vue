@@ -1,0 +1,223 @@
+<template>
+  <v-container v-if="loading">
+    <v-col>
+      <v-row justify="center">
+        <v-progress-circular
+            :size="70"
+            :width="7"
+            color="blue"
+            indeterminate
+        ></v-progress-circular>
+      </v-row>
+    </v-col>
+  </v-container>
+
+  <div v-else>
+    <Navbar />
+    <v-container class="pb-8">
+      <v-row justify="center">
+        <v-col cols="12" md="8" lg="6">
+          <v-card class="rounded-lg pa-4">
+            <v-card-title class="text-h5 mb-4">Edit User Profile</v-card-title>
+            <v-form v-model="formValid" @submit.prevent="saveUser">
+              <v-text-field
+                v-model="user.username"
+                label="Username"
+                readonly
+                variant="outlined"
+                prepend-inner-icon="mdi-account"
+                disabled
+              ></v-text-field>
+
+              <v-text-field
+                v-model="user.height"
+                label="Height (cm)"
+                type="number"
+                variant="outlined"
+                prepend-inner-icon="mdi-human-male-height"
+                required
+              ></v-text-field>
+
+              <v-menu
+                v-model="birthdayMenu"
+                :close-on-content-click="false"
+                transition="scale-transition"
+                offset-y
+                min-width="auto"
+              >
+                <template v-slot:activator="{ props }">
+                  <v-text-field
+                    v-model="user.birthday"
+                    label="Birthday"
+                    prepend-inner-icon="mdi-calendar"
+                    readonly
+                    v-bind="props"
+                    variant="outlined"
+                  ></v-text-field>
+                </template>
+                <v-date-picker
+                  v-model="birthdayDate"
+                  @update:model-value="onBirthdayChange"
+                ></v-date-picker>
+              </v-menu>
+
+              <v-select
+                v-model="user.activityLevel"
+                :items="activityLevels"
+                label="Activity Level"
+                variant="outlined"
+                prepend-inner-icon="mdi-run"
+              ></v-select>
+
+              <v-select
+                v-model="user.gender"
+                :items="genders"
+                label="Gender"
+                variant="outlined"
+                prepend-inner-icon="mdi-gender-male-female"
+              ></v-select>
+
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  color="primary"
+                  variant="elevated"
+                  type="submit"
+                  :loading="saving"
+                  :disabled="!formValid"
+                >
+                  Save Changes
+                </v-btn>
+              </v-card-actions>
+            </v-form>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
+  </div>
+
+  <v-snackbar
+      v-model="snackbar"
+      :timeout=5000
+  >
+    {{ snackbarText }}
+
+    <template v-slot:actions>
+      <v-btn
+          color="red"
+          variant="text"
+          @click="snackbar = false"
+      >
+        Close
+      </v-btn>
+    </template>
+  </v-snackbar>
+</template>
+
+<script setup>
+import {onMounted, ref} from "vue";
+import axios from "axios";
+import {useUserStore} from "../stores/user.js";
+import router from "../router.js";
+import Navbar from "../components/Navbar.vue";
+
+const URL = 'https://weight-tracker-api.shultzlab.com';
+// const URL = 'http://localhost:8080';
+const userStore = useUserStore();
+
+const loading = ref(true);
+const saving = ref(false);
+const formValid = ref(false);
+const snackbar = ref(false);
+const snackbarText = ref("");
+
+const user = ref({
+  username: "",
+  height: 0,
+  birthday: "",
+  activityLevel: "",
+  gender: ""
+});
+
+const birthdayDate = ref(null);
+const birthdayMenu = ref(false);
+
+const activityLevels = [
+  { title: 'Sedentary', value: 'sedentary' },
+  { title: 'Lightly Active', value: 'lightlyActive' },
+  { title: 'Moderately Active', value: 'moderatelyActive' },
+  { title: 'Very Active', value: 'veryActive' },
+  { title: 'Extra Active', value: 'extraActive' }
+];
+
+const genders = [
+  { title: 'Male', value: 'male' },
+  { title: 'Female', value: 'female' }
+];
+
+onMounted(() => {
+  if (!userStore.getUser) {
+    router.push("/login");
+    return;
+  }
+  getUserInfo();
+});
+
+const getUserInfo = async () => {
+  try {
+    const response = await axios({
+      url: `${URL}/user/${userStore.getUser}`,
+      headers: {'x-auth-token': userStore.getToken}
+    });
+
+    user.value = response.data;
+    if (user.value.birthday) {
+        birthdayDate.value = new Date(user.value.birthday);
+    }
+    loading.value = false;
+  } catch (e) {
+    handleNetworkError(e, "Unable to get user info!");
+  }
+};
+
+const onBirthdayChange = (val) => {
+  if (val) {
+    user.value.birthday = val.toISOString().split('T')[0];
+    birthdayMenu.value = false;
+  }
+};
+
+const saveUser = async () => {
+  saving.value = true;
+  try {
+    await axios({
+      method: 'PUT',
+      url: `${URL}/user/${user.value.id}`,
+      headers: {
+        'x-auth-token': userStore.getToken,
+        'Content-Type': 'application/json'
+      },
+      data: user.value
+    });
+    snackbarText.value = "Profile updated successfully!";
+    snackbar.value = true;
+    setTimeout(() => {
+        router.push("/profile");
+    }, 1500);
+  } catch (e) {
+    handleNetworkError(e, "Unable to update profile!");
+  } finally {
+    saving.value = false;
+  }
+};
+
+const handleNetworkError = (e, message) => {
+  console.error(e);
+  if (e?.response?.status === 403 || e?.response?.status === 401) {
+    router.push("/login");
+    return;
+  }
+  snackbarText.value = message;
+  snackbar.value = true;
+};
+</script>

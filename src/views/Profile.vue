@@ -12,9 +12,10 @@
     </v-col>
   </v-container>
 
-
-  <v-container v-else class="pb-8">
-    <v-col class="pa-0">
+  <div v-else>
+    <Navbar />
+    <v-container class="pb-8">
+      <v-col class="pa-0">
       <v-row justify="center" no-gutters>
         <v-col cols="12" md="10" lg="8">
           <LineChart :chartData="tableData" :options="chartOptions" :height="300"/>
@@ -112,6 +113,7 @@
       </v-row>
     </v-col>
   </v-container>
+  </div>
 
   <v-dialog
       v-model="weightEnterDialogModel"
@@ -136,7 +138,7 @@
       <v-card-actions class="pb-4 px-6">
         <v-spacer></v-spacer>
         <v-btn variant="text" @click="weightEnterDialogModel = false">Cancel</v-btn>
-        <v-btn color="primary" variant="elevated" @click="saveWeight" :disabled="!weightEntry">Save</v-btn>
+        <v-btn color="primary" variant="elevated" @click="saveWeight" :disabled="!weightEntry" :loading="loadingChart">Save</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -199,6 +201,7 @@ import {Chart, registerables} from "chart.js";
 
 Chart.register(...registerables);
 
+import Navbar from "../components/Navbar.vue";
 import {useUserStore} from "../stores/user.js";
 import router from "../router.js";
 import axios from "axios";
