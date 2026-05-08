@@ -79,7 +79,7 @@
 
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn variant="text" @click="router.push('/profile')">Cancel</v-btn>
+                <v-btn variant="text" @click="onCancel">Cancel</v-btn>
                 <v-btn
                   color="primary"
                   variant="elevated"
@@ -99,7 +99,7 @@
 
   <v-snackbar
       v-model="snackbar"
-      :timeout=5000
+      :timeout="5000"
   >
     {{ snackbarText }}
 
@@ -113,17 +113,27 @@
       </v-btn>
     </template>
   </v-snackbar>
+
+  <v-dialog v-model="confirmCancelDialog" max-width="400">
+    <v-card class="rounded-lg">
+      <v-card-title>Discard changes?</v-card-title>
+      <v-card-text>You have unsaved changes. Are you sure you want to leave?</v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" @click="confirmCancelDialog = false">Stay</v-btn>
+        <v-btn color="error" variant="elevated" @click="router.push('/profile')">Discard</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
-import {onMounted, ref} from "vue";
-import axios from "axios";
+import {computed, onMounted, ref} from "vue";
 import {useUserStore} from "../stores/user.js";
 import router from "../router.js";
 import Navbar from "../components/Navbar.vue";
+import api from "../utils/api.js";
 
-const URL = 'https://weight-tracker-api.shultzlab.com';
-// const URL = 'http://localhost:8080';
 const userStore = useUserStore();
 
 const loading = ref(true);
@@ -131,6 +141,8 @@ const saving = ref(false);
 const formValid = ref(false);
 const snackbar = ref(false);
 const snackbarText = ref("");
+const initialSnapshot = ref(null);
+const confirmCancelDialog = ref(false);
 
 const user = ref({
   username: "",
@@ -156,25 +168,20 @@ const genders = [
   { title: 'Female', value: 'female' }
 ];
 
+const isDirty = computed(() => JSON.stringify(user.value) !== initialSnapshot.value);
+
 onMounted(() => {
-  if (!userStore.getUser) {
-    router.push("/login");
-    return;
-  }
   getUserInfo();
 });
 
 const getUserInfo = async () => {
   try {
-    const response = await axios({
-      url: `${URL}/user/${userStore.getUser}`,
-      headers: {'x-auth-token': userStore.getToken}
-    });
-
+    const response = await api.get(`/user/${userStore.getUser}`);
     user.value = response.data;
     if (user.value.birthday) {
         birthdayDate.value = new Date(user.value.birthday);
     }
+    initialSnapshot.value = JSON.stringify(user.value);
     loading.value = false;
   } catch (e) {
     handleNetworkError(e, "Unable to get user info!");
@@ -188,18 +195,23 @@ const onBirthdayChange = (val) => {
   }
 };
 
+const onCancel = () => {
+  if (isDirty.value) {
+    confirmCancelDialog.value = true;
+  } else {
+    router.push('/profile');
+  }
+};
+
 const saveUser = async () => {
   saving.value = true;
   try {
-    await axios({
+    await api({
       method: 'PUT',
-      url: `${URL}/user/${user.value.id}`,
-      headers: {
-        'x-auth-token': userStore.getToken,
-        'Content-Type': 'application/json'
-      },
+      url: `/user/${user.value.id}`,
       data: user.value
     });
+    initialSnapshot.value = JSON.stringify(user.value);
     snackbarText.value = "Profile updated successfully!";
     snackbar.value = true;
   } catch (e) {
@@ -211,10 +223,6 @@ const saveUser = async () => {
 
 const handleNetworkError = (e, message) => {
   console.error(e);
-  if (e?.response?.status === 403 || e?.response?.status === 401) {
-    router.push("/login");
-    return;
-  }
   snackbarText.value = message;
   snackbar.value = true;
 };

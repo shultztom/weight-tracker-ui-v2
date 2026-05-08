@@ -173,7 +173,7 @@
 
   <v-snackbar
       v-model="snackbar"
-      :timeout=5000
+      :timeout="5000"
   >
     {{ snackbarText }}
 
@@ -215,10 +215,8 @@ Chart.register(...registerables);
 import Navbar from "../components/Navbar.vue";
 import {useUserStore} from "../stores/user.js";
 import router from "../router.js";
-import axios from "axios";
-
-const URL = 'https://weight-tracker-api.shultzlab.com';
-//const URL = 'http://localhost:8080';
+import api from "../utils/api.js";
+import { convertKgsToLbs, convertLbsToKgs } from "../utils/units.js";
 
 const userStore = useUserStore();
 
@@ -270,99 +268,49 @@ const weightDiffColor = computed(() => {
 })
 
 onMounted(() => {
-  determineIfUserIsLoggedIn();
   getWeightInfo();
   getTdeeOptions();
 })
 
-const determineIfUserIsLoggedIn = () => {
-  if (!userStore.getUser) {
-    router.push("/login");
-  }
-
-  // TODO verify token
-}
-
-const convertKgsToLbs = (weight) => {
-  return weight * 2.20462;
-}
-
-const convertLbsToKgs = (weight) => {
-  return weight / 2.20462;
-}
-
-const handleNetworkError = async (e, message) => {
+const handleNetworkError = (e, message) => {
   console.log(e.message);
-  if (e?.response?.status === 403 || e?.response?.status === 401) {
-    await router.push("/login");
-    return;
-  }
-
   snackbarText.value = message;
   snackbar.value = true;
 }
 
 const getWeightInfo = async () => {
-  const LAST_WEIGHT_INFO_ROUTE = `${URL}/entry/username/${userStore.user}/last`;
-  const STATS_ROUTE = `${URL}/stats/all/${userStore.user}`;
-  const GOAL_ROUTE = `${URL}/goals/${userStore.user}/goal/calorieBreakdown`;
-
   try {
-    // Last Weight
-    const lastWeightResponse = await axios({
-      url: LAST_WEIGHT_INFO_ROUTE,
-      headers: {'x-auth-token': userStore.getToken}
-    });
-
+    const lastWeightResponse = await api.get(`/entry/username/${userStore.user}/last`);
     lastWeight.value = convertKgsToLbs(lastWeightResponse.data?.weight).toFixed(1);
 
-    // Stats
-    const statsResponse = await axios({
-      url: STATS_ROUTE,
-      headers: {'x-auth-token': userStore.getToken}
-    });
-
+    const statsResponse = await api.get(`/stats/all/${userStore.user}`);
     stats.value = {
       BMR: statsResponse.data?.BMR.toFixed(0),
       TDEE: statsResponse.data?.TDEE.toFixed(0),
       BMI: statsResponse.data?.BMI.toFixed(1),
     }
 
-    // Goals
-    const goalResponse = await axios({
-      url: GOAL_ROUTE,
-      headers: {'x-auth-token': userStore.getToken}
-    });
-
+    const goalResponse = await api.get(`/goals/${userStore.user}/goal/calorieBreakdown`);
     goalInfo.value = goalResponse.data;
     if(goalResponse.data?.todayCalorieGoal !== 0){
       hasGoal.value = true;
     }
 
-    // Chart Data
     await updateChart();
-
     loading.value = false;
   } catch (e) {
-    await handleNetworkError(e, "Unable to get weight info!");
+    handleNetworkError(e, "Unable to get weight info!");
   }
-
 }
 
 const updateChart = async () => {
   loadingChart.value = true;
 
-  const TABLE_DATA_ROUTE = `${URL}/entry/username/${userStore.user}?time=${timeRange.value}`;
-
-  // Table Data
   let tableDataResponse;
   try {
-    tableDataResponse = await axios({
-      url: TABLE_DATA_ROUTE,
-      headers: {'x-auth-token': userStore.getToken}
-    });
+    tableDataResponse = await api.get(`/entry/username/${userStore.user}?time=${timeRange.value}`);
   } catch (e) {
-    await handleNetworkError(e, "Unable to update chart data!");
+    handleNetworkError(e, "Unable to update chart data!");
   }
 
   const userTableData = {
@@ -413,23 +361,14 @@ const handleAddWeight = () => {
 }
 
 const saveWeight = async () => {
-  const axiosSubmitConfig = {
-    method: "POST",
-    url: `${URL}/entry`,
-    headers: {
-      'x-auth-token': userStore.getToken
-    },
-    data: {
+  try {
+    await api.post('/entry', {
       username: userStore.getUser,
       weight: convertLbsToKgs(weightEntry.value),
       entryDate: dateEntry.value
-    }
-  }
-
-  try {
-    const response = await axios(axiosSubmitConfig);
+    });
   } catch (e) {
-    await handleNetworkError(e, "Unable to upload weight!");
+    handleNetworkError(e, "Unable to upload weight!");
   }
 
   await getWeightInfo();
@@ -437,19 +376,19 @@ const saveWeight = async () => {
 }
 
 const getTdeeOptions = async () => {
-  const STATS_TDEE_OPTIONS_ROUTE = `${URL}/stats/tdeeOptions/${userStore.user}`;
-  const statsResponse = await axios({
-    url: STATS_TDEE_OPTIONS_ROUTE,
-    headers: {'x-auth-token': userStore.getToken}
-  });
-
-  tdeeOptions.value = [
-    `Sedentary:         ${statsResponse.data?.sedentary}`,
-    `Lightly Active:    ${statsResponse.data?.lightlyActive}`,
-    `Moderately Active: ${statsResponse.data?.moderatelyActive}`,
-    `Very Active:       ${statsResponse.data?.veryActive}`,
-    `Extra Active:      ${statsResponse.data?.extraActive}`
-  ]
+  try {
+    const statsResponse = await api.get(`/stats/tdeeOptions/${userStore.user}`);
+    tdeeOptions.value = [
+      `Sedentary:         ${statsResponse.data?.sedentary}`,
+      `Lightly Active:    ${statsResponse.data?.lightlyActive}`,
+      `Moderately Active: ${statsResponse.data?.moderatelyActive}`,
+      `Very Active:       ${statsResponse.data?.veryActive}`,
+      `Extra Active:      ${statsResponse.data?.extraActive}`
+    ];
+  } catch (e) {
+    snackbarText.value = 'Unable to load TDEE options!';
+    snackbar.value = true;
+  }
 }
 
 const handleTdeeOptionsDialogModel = () => {
