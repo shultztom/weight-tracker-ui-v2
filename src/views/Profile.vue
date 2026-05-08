@@ -386,6 +386,7 @@ const getTdeeOptions = async () => {
       `Extra Active:      ${statsResponse.data?.extraActive}`
     ];
   } catch (e) {
+    console.log('Unable to load TDEE options:', e.message);
     snackbarText.value = 'Unable to load TDEE options!';
     snackbar.value = true;
   }
