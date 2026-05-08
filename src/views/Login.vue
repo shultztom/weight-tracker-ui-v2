@@ -42,7 +42,7 @@
 
     <v-snackbar
         v-model="snackbar"
-        :timeout=5000
+        :timeout="5000"
     >
       {{ snackbarText }}
 
@@ -66,6 +66,7 @@ import axios from "axios";
 
 import {useUserStore} from "../stores/user.js";
 import router from "../router.js";
+import { AUTH_API_URL } from "../config.js";
 
 const userStore = useUserStore();
 
@@ -82,18 +83,18 @@ const onSubmit = async () => {
 
   loading.value = true;
 
-  const URL = `https://auth-api-go.shultzlab.com/login`;
   const DATA = {
     "username": username.value,
     "password": password.value
   }
 
   try {
-    const response = await axios.post(URL, DATA);
+    const response = await axios.post(`${AUTH_API_URL}/login`, DATA);
     if(response.status === 200){
       const token = response?.data?.token;
       userStore.setToken(token);
-      userStore.setUser(username.value); // TODO get from token?
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      userStore.setUser(payload.username);
 
       await router.push("/profile");
     }else{
