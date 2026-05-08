@@ -79,6 +79,7 @@
 
               <v-card-actions>
                 <v-spacer></v-spacer>
+                <v-btn variant="text" @click="router.push('/profile')">Cancel</v-btn>
                 <v-btn
                   color="primary"
                   variant="elevated"
@@ -201,9 +202,6 @@ const saveUser = async () => {
     });
     snackbarText.value = "Profile updated successfully!";
     snackbar.value = true;
-    setTimeout(() => {
-        router.push("/profile");
-    }, 1500);
   } catch (e) {
     handleNetworkError(e, "Unable to update profile!");
   } finally {

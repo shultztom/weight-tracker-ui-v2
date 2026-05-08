@@ -100,6 +100,17 @@
         </v-col>
       </v-row>
 
+      <v-row justify="center" class="mt-2">
+        <v-btn
+          variant="text"
+          size="small"
+          prepend-icon="mdi-target"
+          @click="router.push('/edit/goal')"
+        >
+          {{ hasGoal ? 'Edit Goal' : 'Set Goal' }}
+        </v-btn>
+      </v-row>
+
       <v-row justify="center" class="mt-6">
         <v-btn
           color="primary"
