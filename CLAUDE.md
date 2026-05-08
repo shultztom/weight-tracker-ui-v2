@@ -10,9 +10,11 @@ npm run build    # Production build (output to dist/)
 npm run preview  # Preview the production build locally
 ```
 
-No linter or test suite is configured.
+No test suite is configured.
 
-Node 22 is required (see `.nvmrc`). Use `nvm use` to activate it.
+ESLint is configured with `eslint.config.js`
+
+Node 24 is required (see `.nvmrc`). Use `nvm use` to activate it.
 
 ## Architecture
 
@@ -20,21 +22,21 @@ Vue 3 SPA built with Vite, using `<script setup>` composition API throughout.
 
 **State:** Single Pinia store at `src/stores/user.js` — holds `user` (username) and `token`, both persisted to localStorage via `@vueuse/core` `useStorage()`. Auth header sent as `x-auth-token`.
 
-**Routing:** `src/router.js` — five routes (`/`, `/login`, `/profile`, `/edit/user`, `/edit/goal`). Home redirects to `/login` or `/profile` based on store token presence.
+**Routing:** `src/router.js` — five routes (`/`, `/login`, `/profile`, `/edit/user`, `/edit/goal`). Root redirects to `/profile`. A `beforeEach` guard redirects unauthenticated users to `/login` for all routes except `/` and `/login`.
 
 **UI:** Vuetify 3 (Material Design) for all components. MDI icons via `@mdi/font`.
 
 **Charts:** Chart.js 3 via `vue-chart-3` wrapper, used on the Profile dashboard for the weight history line chart.
 
-**API calls:** All made directly in view components with axios. Two backend services:
-- `https://auth-api-go.shultzlab.com` — login only
-- `https://weight-tracker-api.shultzlab.com` — all weight/stats/goal data
+**API calls:** Views use a shared axios instance at `src/utils/api.js`, baseURL'd to the weight tracker API. It automatically attaches the `x-auth-token` header and handles 401/403 by resetting auth state and redirecting to `/login`. Login.vue uses bare axios directly (it posts to the auth API, which has no token yet). Two backend services:
+- `https://auth-api-go.shultzlab.com` — login only (base URL in `src/config.js`)
+- `https://weight-tracker-api.shultzlab.com` — all weight/stats/goal data (base URL in `src/config.js`)
 
-API base URLs are hardcoded (no `.env` config). See `local-docs/goal-docs.md` for Goals endpoint reference.
+See `local-docs/goal-docs.md` for Goals endpoint reference.
 
 **Key view: `src/views/Profile.vue`** — the main dashboard. Fetches weight entries, stats (BMR/TDEE/BMI), and goals on mount. Handles time range filtering, add-weight dialog, goal display, and TDEE options dialog. Most feature work happens here.
 
-**Weight units:** stored in kg on the backend, converted to lbs for display (factor: `2.20462`).
+**Weight units:** stored in kg on the backend, converted to lbs for display via `src/utils/units.js` (`convertKgsToLbs` / `convertLbsToKgs`).
 
 ## Deployment
 
