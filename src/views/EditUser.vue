@@ -223,6 +223,7 @@ const saveUser = async () => {
 
 const handleNetworkError = (e, message) => {
   console.error(e);
+  if (e?.isApiOutage) return;
   snackbarText.value = message;
   snackbar.value = true;
 };
