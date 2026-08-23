@@ -82,7 +82,23 @@
       <v-row v-if="hasGoal" justify="center" class="mt-4">
         <v-col cols="12" sm="10" md="8">
           <v-card variant="outlined" class="rounded-lg">
-            <v-row no-gutters class="text-center py-2">
+            <v-alert
+              v-if="goalStatus === 'reached'"
+              type="success"
+              variant="tonal"
+              icon="mdi-trophy-outline"
+              title="Goal reached!"
+              :text="`You reached your target of ${goalWeightLbs} lbs.`"
+            ></v-alert>
+            <v-alert
+              v-else-if="goalStatus === 'expired'"
+              type="warning"
+              variant="tonal"
+              icon="mdi-calendar-alert"
+              title="Goal date passed"
+              text="Update your goal to choose a new target date."
+            ></v-alert>
+            <v-row v-else no-gutters class="text-center py-2">
               <v-col cols="4">
                 <div class="text-caption text-uppercase font-weight-bold">Days Left</div>
                 <div class="text-h6">{{ goalInfo?.daysUntilGoal }}</div>
@@ -233,6 +249,7 @@ const timeRangeItems = [
 ];
 
 const lastWeight = ref(null);
+const lastWeightKgs = ref(null);
 const stats = ref({});
 const tableData = ref({});
 const chartOptions = {
@@ -259,7 +276,32 @@ const tdeeOptionsDialogModel = ref(false);
 const tdeeOptions = ref([]);
 
 const goalInfo = ref(null)
-const hasGoal = ref(false)
+const activeGoal = ref(null)
+
+const hasGoal = computed(() => activeGoal.value !== null)
+
+const goalStatus = computed(() => {
+  if (!activeGoal.value) return 'none';
+
+  if (lastWeightKgs.value !== null && lastWeightKgs.value <= Number(activeGoal.value.weight)) {
+    return 'reached';
+  }
+
+  const today = new Date();
+  const todayString = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
+
+  if (activeGoal.value.goalDate < todayString) return 'expired';
+  return 'active';
+})
+
+const goalWeightLbs = computed(() => {
+  if (!activeGoal.value) return '';
+  return convertKgsToLbs(activeGoal.value.weight).toFixed(1);
+})
 
 const weightDiffColor = computed(() => {
   if (weightDiffForTimePeriodUpDownOrFlat.value === 'down') return 'text-success';
@@ -274,6 +316,7 @@ onMounted(() => {
 
 const handleNetworkError = (e, message) => {
   console.log(e.message);
+  if (e?.isApiOutage) return;
   snackbarText.value = message;
   snackbar.value = true;
 }
@@ -281,7 +324,8 @@ const handleNetworkError = (e, message) => {
 const getWeightInfo = async () => {
   try {
     const lastWeightResponse = await api.get(`/entry/username/${userStore.user}/last`);
-    lastWeight.value = convertKgsToLbs(lastWeightResponse.data?.weight).toFixed(1);
+    lastWeightKgs.value = lastWeightResponse.data?.weight;
+    lastWeight.value = convertKgsToLbs(lastWeightKgs.value).toFixed(1);
 
     const statsResponse = await api.get(`/stats/all/${userStore.user}`);
     stats.value = {
@@ -290,11 +334,11 @@ const getWeightInfo = async () => {
       BMI: statsResponse.data?.BMI.toFixed(1),
     }
 
+    const goalsResponse = await api.get(`/goals/${userStore.user}`);
+    activeGoal.value = goalsResponse.data?.[0] ?? null;
+
     const goalResponse = await api.get(`/goals/${userStore.user}/goal/calorieBreakdown`);
     goalInfo.value = goalResponse.data;
-    if(goalResponse.data?.todayCalorieGoal !== 0){
-      hasGoal.value = true;
-    }
 
     await updateChart();
     loading.value = false;
@@ -311,6 +355,8 @@ const updateChart = async () => {
     tableDataResponse = await api.get(`/entry/username/${userStore.user}?time=${timeRange.value}`);
   } catch (e) {
     handleNetworkError(e, "Unable to update chart data!");
+    loadingChart.value = false;
+    return;
   }
 
   const userTableData = {
@@ -387,6 +433,7 @@ const getTdeeOptions = async () => {
     ];
   } catch (e) {
     console.log('Unable to load TDEE options:', e.message);
+    if (e?.isApiOutage) return;
     snackbarText.value = 'Unable to load TDEE options!';
     snackbar.value = true;
   }

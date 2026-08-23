@@ -55,6 +55,15 @@
               </v-menu>
 
               <v-card-actions>
+                <v-btn
+                  v-if="editMode"
+                  color="error"
+                  variant="text"
+                  :loading="deleting"
+                  @click="confirmDeleteDialog = true"
+                >
+                  Delete Goal
+                </v-btn>
                 <v-spacer></v-spacer>
                 <v-btn variant="text" @click="onCancel">Cancel</v-btn>
                 <v-btn
@@ -92,6 +101,22 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <v-dialog v-model="confirmDeleteDialog" max-width="400">
+    <v-card class="rounded-lg">
+      <v-card-title>Delete goal?</v-card-title>
+      <v-card-text>
+        This permanently deletes all of your saved goals. This action cannot be undone.
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer></v-spacer>
+        <v-btn variant="text" :disabled="deleting" @click="confirmDeleteDialog = false">Cancel</v-btn>
+        <v-btn color="error" variant="elevated" :loading="deleting" @click="deleteGoals">
+          Delete Goal
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
 </template>
 
 <script setup>
@@ -106,14 +131,17 @@ const userStore = useUserStore();
 
 const loading = ref(true);
 const saving = ref(false);
+const deleting = ref(false);
 const formValid = ref(false);
 const snackbar = ref(false);
 const snackbarText = ref("");
 const initialSnapshot = ref(null);
 const confirmCancelDialog = ref(false);
+const confirmDeleteDialog = ref(false);
 
 const editMode = ref(false);
 const goalId = ref(null);
+const goalIds = ref([]);
 const goalWeightLbs = ref(null);
 const goalDateString = ref("");
 const goalDatePicker = ref(null);
@@ -146,6 +174,7 @@ const loadGoal = async () => {
   try {
     const response = await api.get(`/goals/${userStore.getUser}`);
     const goals = response.data;
+    goalIds.value = goals.map(goal => goal.id);
     if (goals && goals.length > 0) {
       const latest = goals[0];
       editMode.value = true;
@@ -194,11 +223,14 @@ const saveGoal = async () => {
         data: payload,
       });
     } else {
-      await api({
+      const response = await api({
         method: 'POST',
         url: `/goals/${userStore.getUser}`,
         data: payload,
       });
+      goalId.value = response.data.id;
+      goalIds.value = [...goalIds.value, response.data.id];
+      editMode.value = true;
     }
     initialSnapshot.value = JSON.stringify({
       goalWeightLbs: goalWeightLbs.value,
@@ -213,8 +245,28 @@ const saveGoal = async () => {
   }
 };
 
+const deleteGoals = async () => {
+  deleting.value = true;
+
+  try {
+    await Promise.all(goalIds.value.map(async (id) => {
+      try {
+        await api.delete(`/goals/${userStore.getUser}/${id}`);
+      } catch (e) {
+        if (e?.response?.status !== 404) throw e;
+      }
+    }));
+    await router.replace('/profile');
+  } catch (e) {
+    handleNetworkError(e, "Unable to delete goal!");
+  } finally {
+    deleting.value = false;
+  }
+};
+
 const handleNetworkError = (e, message) => {
   console.error(e);
+  if (e?.isApiOutage) return;
   snackbarText.value = message;
   snackbar.value = true;
 };
