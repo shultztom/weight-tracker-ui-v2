@@ -1,5 +1,5 @@
 # Get node to build
-FROM node:lts-alpine as builder
+FROM node:lts-alpine AS builder
 
 # Create app directory
 WORKDIR /app
@@ -13,7 +13,7 @@ COPY . .
 RUN [ "npm", "run", "build" ]
 
 # Get nginx to serve
-FROM nginxinc/nginx-unprivileged:1.29-alpine-slim
+FROM nginx/nginx-unprivileged:alpine-perl
 
 # Set up nginx conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
